@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KIND (가상) · 영업(잠정)실적 공정공시 · XBRL/iXBRL 뷰어</title>
+<style>
+:root{--navy:#0b3d68;--navy2:#12518a;--line:#d5dde6;--bg:#f4f6f9;--ink:#1f2a37}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;color:var(--ink);background:var(--bg);font-size:13px}
+a{color:var(--navy2)}
+/* 헤더 */
+.top{background:linear-gradient(90deg,var(--navy),var(--navy2));color:#fff;padding:14px 22px;display:flex;align-items:center;gap:14px}
+.top .logo{font-size:20px;font-weight:800;letter-spacing:1px}
+.top .logo small{font-weight:400;opacity:.85;font-size:12px;margin-left:6px}
+.top .tag{margin-left:auto;font-size:11px;opacity:.9;text-align:right;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:18px}
+/* 필터 */
+.filters{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:14px}
+.filters input[type=text]{border:1px solid #c3ccd6;border-radius:6px;padding:8px 11px;width:250px;font-size:13px}
+.seg{display:inline-flex;border:1px solid #c3ccd6;border-radius:6px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:8px 14px;cursor:pointer;font-size:12px;color:#445}
+.seg button.on{background:var(--navy);color:#fff}
+select{border:1px solid #c3ccd6;border-radius:6px;padding:8px 10px;font-size:12px;background:#fff}
+.lbl{color:#667;font-size:11px;margin-right:-6px}
+/* 가정 오늘(as-of) + 시간흐름 바 */
+.asofbar{background:linear-gradient(90deg,var(--navy),var(--navy2));color:#fff;border-radius:8px;padding:11px 16px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:12px;box-shadow:0 1px 5px rgba(11,61,104,.2)}
+.asof-grp{display:flex;align-items:center;gap:10px}
+.asof-lbl{font-size:12px;font-weight:700;line-height:1.22;opacity:.96}
+.asof-inputs{display:flex;align-items:center;gap:6px}
+.asof-text{border:1px solid #2f6ea8;border-radius:6px;padding:7px 10px;width:236px;font-size:13px;font-variant-numeric:tabular-nums}
+.asof-text.bad{border-color:#e0563e;background:#fff0ec}
+.asof-date{border:1px solid #2f6ea8;border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;color:var(--ink)}
+.asof-now-grp{display:flex;flex-direction:column;gap:0;padding-left:16px;border-left:1px solid rgba(255,255,255,.25)}
+.asof-now-lbl{font-size:10px;opacity:.82;letter-spacing:.4px}
+.asof-now{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.4px}
+.asof-flow-grp{display:flex;align-items:center;gap:9px;margin-left:auto}
+.asof-lbl2{font-size:11px;opacity:.9}
+.flowseg{border-color:rgba(255,255,255,.4)}
+.flowseg button{background:rgba(255,255,255,.1);color:#eaf1f8;font-weight:600;padding:7px 11px}
+.flowseg button.on{background:#fff;color:var(--navy)}
+.flowseg button:hover:not(.on){background:rgba(255,255,255,.22)}
+@keyframes rowin{0%{background:#fff3cf}100%{background:transparent}}
+table.list tbody tr.justin{animation:rowin 1.7s ease-out}
+#stat{margin-left:auto;color:#445;font-size:12px}
+#stat b{color:var(--navy)}
+/* 표 */
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+table.list{width:100%;border-collapse:collapse}
+table.list th{background:#eef2f7;color:#334;font-weight:600;font-size:12px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--line)}
+table.list td{padding:9px 12px;border-bottom:1px solid #eef1f5}
+table.list tbody tr{cursor:pointer}
+table.list tbody tr:hover{background:#f5f9ff}
+.list .dt{color:#667;white-space:nowrap;font-variant-numeric:tabular-nums}
+.list .cd{color:#778;font-variant-numeric:tabular-nums}
+.list .n{text-align:right;font-variant-numeric:tabular-nums}
+.list .u{color:#889;font-size:11px}
+.list .go{color:var(--navy2);text-align:right;white-space:nowrap}
+.list .kc{text-align:center;white-space:nowrap}
+.list .tt{color:#556;font-size:12px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subtag{display:inline-block;background:#fbe9c9;color:#a5760b;border-radius:8px;padding:0 6px;font-size:10px;font-weight:700}
+.subtag2{display:inline-block;background:rgba(255,255,255,.18);color:#ffe0a3;border-radius:8px;padding:0 7px;font-size:11px;font-weight:600;margin-left:4px}
+.klink{display:inline-block;padding:2px 8px;border:1px solid #cbd6e2;border-radius:5px;font-size:11px;color:#0b3d68;text-decoration:none;font-weight:600}
+.klink:hover{background:#0b3d68;color:#fff;border-color:#0b3d68}
+.klink.off{color:#c3ccd6;border:0;pointer-events:none;font-weight:400}
+.list .empty{text-align:center;color:#889;padding:40px}
+.bg{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600}
+.bg-c{background:#e5f0ff;color:#12518a}
+.bg-s{background:#eaf7ee;color:#1a7a3a}
+/* 페이저 */
+.pager{display:flex;gap:4px;align-items:center;padding:12px;flex-wrap:wrap}
+.pager .pinfo{margin-right:auto;color:#778;font-size:12px}
+.pager button{border:1px solid #c9d2dc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12px;min-width:32px}
+.pager button.cur{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* 오버레이 상세 */
+.overlay{position:fixed;inset:0;background:rgba(15,25,40,.55);display:none;z-index:50;padding:28px}
+.overlay.on{display:block}
+.modal{max-width:1060px;margin:0 auto;background:#fff;border-radius:10px;max-height:calc(100vh - 56px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.mhead{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:flex-start;gap:12px}
+.dh-cm{font-size:18px;font-weight:700}
+.dh-cd{font-weight:400;opacity:.8;font-size:14px;margin-left:6px}
+.dh-dt{font-size:11px;opacity:.85;margin-top:4px}
+.mhead .x{margin-left:auto;background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:6px;font-size:18px;cursor:pointer}
+.tabs{display:flex;gap:2px;background:#eef2f7;padding:8px 12px 0;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:#dde4ec;padding:9px 16px;border-radius:7px 7px 0 0;cursor:pointer;font-size:12px;color:#445;font-weight:600}
+.tabs button.on{background:#fff;color:var(--navy);box-shadow:0 -1px 0 var(--navy) inset}
+.mbody{padding:20px 24px;overflow:auto}
+/* 서식 */
+.ftitle{font-size:17px;font-weight:700;text-align:center;border-top:2px solid var(--navy);border-bottom:1px solid var(--navy);padding:11px;color:var(--navy)}
+.funit{text-align:right;color:#667;font-size:11px;margin:6px 0}
+.sec{margin:18px 0 8px;font-weight:700;color:var(--navy);border-left:4px solid var(--navy);padding-left:8px}
+table.perf{width:100%;border-collapse:collapse;font-size:12px}
+.perf th,.perf td{border:1px solid #c2ccd7;padding:5px 7px;text-align:center}
+.perf thead th{background:#eaf1f8;color:var(--navy)}
+.perf .mt{background:#f6f9fc;font-weight:600;text-align:left;padding-left:9px;width:180px}
+.perf .sp{background:#fafcfe;color:#556;width:74px}
+.perf td.n{text-align:right;font-variant-numeric:tabular-nums}
+.perf .up{color:#c0392b}.perf .down{color:#1558a6}.perf .trans{color:#b8860b;font-weight:600}
+.dash{color:#c3c3c3}
+table.kv{width:100%;border-collapse:collapse;margin:2px 0}
+.kv th{background:#f0f4f8;border:1px solid #ccd6e0;padding:6px 9px;text-align:left;width:160px;color:#334}
+.kv td{border:1px solid #ccd6e0;padding:6px 9px;white-space:pre-wrap;line-height:1.5}
+.note{background:#fbfcfe;border:1px solid #dde5ee;padding:10px 12px;white-space:pre-wrap;line-height:1.6;font-size:12px}
+/* facts */
+.fnote{color:#556;margin-bottom:10px;font-size:12px}
+table.facts{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+.facts th{background:#eef2f7;color:#334;padding:8px 9px;text-align:left;border-bottom:2px solid var(--line);white-space:nowrap}
+.facts td{padding:6px 9px;border-bottom:1px solid #eef1f5;vertical-align:top}
+.facts .el{font-family:Consolas,monospace;color:#0a5;font-size:11px;white-space:nowrap}
+.facts td:nth-child(2){white-space:nowrap;color:#334}
+.facts .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.facts .ctx{color:#556;font-size:11px;min-width:150px;white-space:nowrap}
+.facts .un{color:#889}
+.facts .dim{display:inline-block;background:#fff3d6;color:#a5760b;border-radius:8px;padding:0 6px;font-size:10px}
+.facts .tdim{background:#e5eefb;color:#12518a;margin-top:2px}
+.kindbar{display:flex;align-items:center;gap:12px;padding:4px 2px 12px;flex-wrap:wrap}
+.kindbar span{color:#334}.kindbar b{color:var(--navy)}
+.kopen{margin-left:auto;background:var(--navy);color:#fff;text-decoration:none;padding:8px 14px;border-radius:6px;font-weight:600;font-size:12px}
+.kopen:hover{background:#12518a}
+.kindframe{width:100%;height:64vh;border:1px solid var(--line);border-radius:6px;background:#fff}
+.kindnote{color:#889;font-size:11px;margin-top:8px}
+.raw{padding:10px 4px}
+.rawbtn{display:block;margin:10px 0;padding:13px 16px;background:#f2f6fb;border:1px solid #cfdae7;border-radius:8px;text-decoration:none;color:var(--navy);font-weight:600}
+.rawbtn:hover{background:#e9f1fb}
+.rawbtn.kind{background:#0b3d68;color:#fff;border-color:#0b3d68}
+.rawbtn.kind:hover{background:#12518a}
+.rawbtn.off{background:#f4f5f7;color:#9aa4b0;border-style:dashed;font-weight:500;cursor:not-allowed}
+.rawmeta{margin-top:16px;font-size:12px;color:#556;line-height:1.9;border-top:1px dashed #ccd;padding-top:12px}
+.rawmeta b{color:var(--navy);font-family:Consolas,monospace}
+.foot{text-align:center;color:#8a95a3;font-size:11px;padding:22px}
+/* 목록 수정폭 배지 */
+.ldelta{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.ldelta.dz{background:#eaf7ee;color:#1a7a3a}
+.ldelta.dn{background:#e7f0fb;color:#12518a}
+.ldelta.dp{background:#fdeceb;color:#c0392b}
+.wait2{display:inline-block;color:#a7b0bb;font-size:11px;border:1px dashed #cfd7e0;border-radius:9px;padding:0 6px}
+/* 잠정 신뢰도 탭 */
+.pit-note{background:#f1f6fc;border:1px solid #d3e0ef;color:#33526f;padding:9px 12px;border-radius:7px;font-size:12px;margin-bottom:10px}
+.pit-warn{background:#fff5e6;border:1px solid #f0cf94;color:#9a6100;padding:9px 12px;border-radius:7px;font-size:12px;margin-bottom:10px}
+.trustbar{display:flex;align-items:center;gap:14px;margin:4px 0 10px;flex-wrap:wrap}
+.trustseg button{padding:6px 13px}
+.pit-toggle{margin-left:auto;font-size:12px;color:#556;display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.cred{background:#fbfcfe;border-left:4px solid var(--navy);padding:9px 12px;font-size:12px;color:#334;margin-bottom:12px;line-height:1.7}
+.cred b{color:var(--navy)}.cred small{color:#889}.credsub{color:#99a;font-weight:400;font-size:11px}
+.cred-none{border-left-color:#c9d2dc;color:#889}
+.cred-fin{border-left-color:#d9a441;background:#fff9ef;color:#7a5a12}.cred-fin b{color:#a5760b}
+.track .finx{color:#a5760b;font-weight:600}
+table.track{width:100%;border-collapse:collapse;font-size:12px}
+.track th{background:#eef2f7;color:#334;padding:8px 10px;text-align:left;border-bottom:2px solid var(--line);white-space:nowrap}
+.track th.n,.track td.n{text-align:right;font-variant-numeric:tabular-nums}
+.track td{padding:7px 10px;border-bottom:1px solid #eef1f5;vertical-align:middle}
+.track td.q{white-space:nowrap;color:#334;font-weight:600}
+.track td.q small,.track td.rv small{color:#99a;font-weight:400;font-size:10.5px}
+.track tr.cur{background:#fffaf0}
+.track tr.cur td{border-bottom-color:#f0d9a8}
+.track tr.old td{color:#a7b0bb;background:#fafbfc}
+.track .dz{color:#1a7a3a;font-weight:700}
+.track .dn{color:#12518a;font-weight:700}
+.track .dp{color:#c0392b;font-weight:700}
+.track .wait{color:#b0b8c2;font-style:normal}
+.here{display:inline-block;background:var(--navy);color:#fff;font-size:10px;border-radius:8px;padding:0 6px;margin-left:5px;font-weight:600}
+.vtag{display:inline-block;font-size:10px;border-radius:7px;padding:0 6px;margin-left:4px;font-weight:700}
+.vtag.vcur{background:#e5f0ff;color:#12518a}
+.vtag.vold{background:#f0f1f3;color:#98a1ac;text-decoration:none}
+.trustfoot{color:#889;font-size:11px;margin-top:12px;line-height:1.7;border-top:1px dashed #ccd;padding-top:10px}
+.trustcharts{display:flex;flex-direction:column;gap:12px;margin:4px 0 16px}
+.trustchart{width:100%;min-height:316px;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.chart-empty{display:flex;align-items:center;justify-content:center;min-height:120px;color:#99a;font-size:12px;text-align:center}
+.tabletop{display:flex;align-items:center;gap:12px;margin:16px 0 8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px}
+.tablehint{color:#667;font-size:12px}.tablehint b{color:var(--navy)}
+/* 팩트 하이라이트 + 마우스오버 툴팁 */
+.fact{background:rgba(255,208,0,.16);border-bottom:1px dotted #c8a500;border-radius:2px;padding:0 1px;cursor:help;transition:background .12s}
+.fact:hover{background:rgba(255,208,0,.55)}
+.perf td.n .fact{display:inline-block}
+#tip{position:fixed;z-index:200;display:none;max-width:360px;background:#1b2532;color:#e8eef5;font-size:12px;line-height:1.55;padding:11px 13px;border-radius:9px;box-shadow:0 10px 34px rgba(0,0,0,.4);pointer-events:none;border:1px solid #2f3d4e}
+#tip .tt-h{font-weight:700;font-size:13px;margin-bottom:6px;color:#fff}
+#tip code{color:#7fd4a0;font-family:Consolas,monospace;font-size:11px;word-break:break-all}
+#tip .tt-r{margin:2px 0;display:flex;gap:8px}
+#tip .tt-r b{color:#93a9c4;font-weight:600;min-width:52px;flex:0 0 auto}
+#tip .tt-dim{background:#5a4a12;color:#ffd777;border-radius:8px;padding:0 7px;font-size:11px}
+#tip .tt-d{margin-top:8px;padding-top:8px;border-top:1px solid #354254;color:#c7d5e4}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">KIND<small>가상 전자공시시스템 · Korea Investor's Network for Disclosure (mock)</small></div>
+  <div class="tag">영업(잠정)실적 공정공시 · XBRL / Inline XBRL 뷰어<br>Taxonomy: KRX 2023-12-31 · Entry Point A700000401</div>
+</div>
+
+<div class="wrap">
+  <div class="asofbar">
+    <div class="asof-grp">
+      <span class="asof-lbl">오늘의 날짜를<br>언제로 가정할지</span>
+      <div class="asof-inputs">
+        <input type="text" id="asofText" class="asof-text" spellcheck="false" autocomplete="off"
+               placeholder="YYYYMMDD · YYYY.MM.DD · YYYY-MM-DD">
+        <input type="date" id="asofDate" class="asof-date" title="달력에서 선택">
+      </div>
+    </div>
+    <div class="asof-now-grp">
+      <span class="asof-now-lbl">가정 시각</span>
+      <span class="asof-now" id="asofNow">—</span>
+    </div>
+    <div class="asof-flow-grp">
+      <span class="asof-lbl2">시간흐름</span>
+      <span class="seg flowseg" id="flowseg">
+        <button data-mult="0" class="on" title="정지 — 위 시각에서 고정">정지</button>
+        <button data-mult="1" title="실제시간과 동일 속도">×1</button>
+        <button data-mult="43200" title="×43200 · 실제 1초 = 12시간">×43200</button>
+        <button data-mult="86400" title="×86400 · 실제 1초 = 1일">×86400</button>
+        <button data-mult="172800" title="×172800 · 실제 1초 = 2일">×172800</button>
+        <button data-mult="345600" title="×345600 · 실제 1초 = 4일">×345600</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="q" placeholder="회사명 또는 종목코드 검색">
+    <span class="seg">
+      <button data-basis="all" class="on">전체</button>
+      <button data-basis="consolidated">연결</button>
+      <button data-basis="separate">개별/별도</button>
+    </span>
+    <span class="lbl">정렬</span>
+    <select id="sort">
+      <option value="date">최신순</option>
+      <option value="rev">매출액순</option>
+      <option value="company">회사명순</option>
+    </select>
+    <span id="stat"></span>
+  </div>
+
+  <div class="card">
+    <table class="list">
+      <thead><tr>
+        <th>공시일시</th><th>회사명</th><th>종목코드</th><th>공시제목</th><th>기준</th>
+        <th style="text-align:right">매출액(당기)</th><th style="text-align:right">영업이익(당기)</th>
+        <th>단위</th>
+      </tr></thead>
+      <tbody id="list"></tbody>
+    </table>
+    <div class="pager" id="pager"></div>
+  </div>
+  <div class="foot">본 시스템은 실제 공시내역에 KRX Taxonomy를 적용해 생성한 XBRL/iXBRL을 표시하는 <b>학습용 가상 KIND</b>입니다. 실제 한국거래소 KIND와 무관합니다.</div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mhead">
+      <div id="dhead" style="flex:1"></div>
+      <button class="x" onclick="closeDetail()">×</button>
+    </div>
+    <div class="tabs" id="dtabs"></div>
+    <div class="mbody" id="dbody"></div>
+  </div>
+</div>
+
+<div id="tip"></div>
+
+<script src="plotly.min.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

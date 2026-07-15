@@ -1,0 +1,19 @@
+# 기본: 루트의 모든 항목 무시 (대용량 다운로드/생성물 제외)
+/*
+
+# 추적 대상만 화이트리스트로 되살림
+!.gitignore
+!README.md
+
+# 루트 문서(마크다운)
+!*.md
+
+# 뷰어 구동에 필요한 파일만
+!kind_project/
+kind_project/*
+!kind_project/viewer/
+kind_project/viewer/*
+!kind_project/viewer/index.html
+!kind_project/viewer/app.js
+!kind_project/viewer/data.js
+!kind_project/viewer/plotly.min.js
