@@ -467,9 +467,10 @@ function trustTab(r) {
     </div>
     ${badgeHtml}
     <div class="trustcharts">
-      <div id="trustchart-Revenue" class="trustchart"></div>
-      <div id="trustchart-OperatingIncomeLoss" class="trustchart"></div>
-      <div id="trustchart-ProfitLoss" class="trustchart"></div>
+      ${TRUST_METRICS.map(m => `<div class="trustgrp">
+        <div id="trustchart-${m.key}" class="trustchart"></div>
+        <div id="trustdev-${m.key}" class="trustdev"></div>
+      </div>`).join('')}
     </div>
     <div class="tabletop">
       <span class="seg trustseg">${seg}</span>
@@ -506,7 +507,35 @@ function trustChartRows(r, asOf, mk) {
 }
 
 function renderTrustCharts(r) {
-  for (const m of TRUST_METRICS) renderOneTrustChart(r, m.key, m.ko);
+  for (const m of TRUST_METRICS) { renderOneTrustChart(r, m.key, m.ko); renderOneDevChart(r, m.key, m.ko); }
+}
+/* 괴리율(수정폭) 전용 바차트 — 값차트에선 단위가 커서 안 보이는 잠정↔확정 괴리를 % 스케일로 확대 */
+function renderOneDevChart(r, mk, ko) {
+  const el = document.getElementById('trustdev-' + mk);
+  if (!el || typeof Plotly === 'undefined') return;
+  const rows = trustChartRows(r, asOfOf(r), mk).filter(o => typeof o.d === 'number');
+  if (!rows.length) {
+    el.innerHTML = `<div class="chart-empty" style="min-height:64px">${r.finsec ? '금융업종 · 확정 대사불가 → 괴리율 없음' : '확정 공개 전 · 괴리율 없음'}</div>`;
+    return;
+  }
+  const xs = rows.map(o => o.q), ys = rows.map(o => Math.abs(o.d) < 0.005 ? 0 : o.d);   // ±0.00% 표기 정규화
+  const colors = ys.map(d => Math.abs(d) < 0.5 ? '#1a7a3a' : (d > 0 ? '#c0392b' : '#1558a6'));
+  const text = ys.map(d => `${d > 0 ? '+' : ''}${d.toFixed(2)}%`);
+  const amax = Math.max(...ys.map(Math.abs), 0.5);
+  const trace = {
+    x: xs, y: ys, type: 'bar', marker: { color: colors }, width: 0.5,
+    text, textposition: 'outside', textfont: { size: 10, color: '#445' }, cliponaxis: false,
+    hovertemplate: '%{x} 괴리율<br>(확정−잠정)/|잠정|<br>%{text}<extra></extra>',
+  };
+  const layout = {
+    title: { text: '괴리율(수정폭) = (확정−잠정)/|잠정|', font: { size: 11, color: '#889' }, x: 0, xanchor: 'left' },
+    margin: { l: 46, r: 16, t: 24, b: 24 }, height: 158,
+    paper_bgcolor: '#fff', plot_bgcolor: '#fff',
+    xaxis: { type: 'category', tickfont: { size: 10, color: '#556' }, fixedrange: true },
+    yaxis: { range: [-amax * 1.4, amax * 1.4], zeroline: true, zerolinecolor: '#b8c2cf', zerolinewidth: 1.5, gridcolor: '#f2f5f9', ticksuffix: '%', tickfont: { size: 9, color: '#889' }, fixedrange: true },
+    showlegend: false, hovermode: 'closest', bargap: 0.45,
+  };
+  Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true });
 }
 function renderOneTrustChart(r, mk, ko) {
   const el = document.getElementById('trustchart-' + mk);
@@ -738,7 +767,7 @@ function paintDetail() {
       ${r.basis === 'consolidated' ? '<span class="bg bg-c">연결</span>' : '<span class="bg bg-s">별도</span>'}</div>
      <div class="dh-dt">${esc(r.dt)} · ${esc(r.title || '영업(잠정)실적(공정공시)')}${r.sub ? ' <span class="subtag2">⚠ 자회사 대신공시 — 재무·identifier는 자회사 것</span>' : ''} · Entry Point A700000401</div>`;
   document.getElementById('dtabs').innerHTML =
-    ['form', '공시서식(iXBRL 뷰)', 'trust', '잠정 신뢰도', 'kind', 'KIND공시원문', 'facts', 'XBRL 팩트', 'raw', '원본 파일']
+    ['form', '공시서식(iXBRL 뷰)', 'trust', '잠정실적의 신뢰도', 'kind', 'KIND공시원문', 'facts', 'XBRL 팩트', 'raw', '원본 파일']
       .reduce((a, _, i, arr) => { if (i % 2) a.push(`<button class="${curTab === arr[i - 1] ? 'on' : ''}" onclick="setTab('${arr[i - 1]}')">${arr[i]}</button>`); return a; }, []).join('');
   let html = '';
   if (curTab === 'form') html = formTab(r);
