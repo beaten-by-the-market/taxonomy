@@ -137,6 +137,23 @@ table.facts{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto
 .rawmeta{margin-top:16px;font-size:12px;color:#556;line-height:1.9;border-top:1px dashed #ccd;padding-top:12px}
 .rawmeta b{color:var(--navy);font-family:Consolas,monospace}
 .foot{text-align:center;color:#8a95a3;font-size:11px;padding:22px}
+/* 시계열 차트 팝업(당해/누계·기타항목 클릭) */
+.chartable{cursor:pointer;transition:background .12s}
+.chartable:hover{background:#eaf3ff}
+.chart-ic{font-size:10px;opacity:.32;margin-left:2px}
+.chartable:hover .chart-ic{opacity:.95}
+.cpop-ov{position:fixed;inset:0;background:rgba(15,25,40,.5);display:none;z-index:220;padding:30px}
+.cpop-ov.on{display:flex;align-items:center;justify-content:center}
+.cpop{background:#fff;border-radius:12px;width:min(780px,94vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.4)}
+.cpop-h{background:var(--navy);color:#fff;padding:13px 18px;display:flex;align-items:baseline;gap:8px}
+.cpop-h .t{font-size:14px;font-weight:700}
+.cpop-h .s{font-size:11px;opacity:.82}
+.cpop-h .x{margin-left:auto;background:rgba(255,255,255,.15);border:0;color:#fff;width:30px;height:30px;border-radius:6px;font-size:17px;cursor:pointer;align-self:center}
+.cpop-b{padding:10px 14px 14px;overflow:auto}
+.cpop-legend{display:flex;gap:16px;align-items:center;font-size:11px;color:#556;padding:2px 4px 6px}
+.cpop-legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.cpop-note{color:#889;font-size:11px;margin-top:8px;line-height:1.6}
+.cpop-chart{width:100%;min-height:370px}
 /* 목록 수정폭 배지 */
 .ldelta{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
 .ldelta.dz{background:#eaf7ee;color:#1a7a3a}
@@ -261,6 +278,20 @@ table.track{width:100%;border-collapse:collapse;font-size:12px}
     </div>
     <div class="tabs" id="dtabs"></div>
     <div class="mbody" id="dbody"></div>
+  </div>
+</div>
+
+<div class="cpop-ov" id="cpop">
+  <div class="cpop">
+    <div class="cpop-h">
+      <span class="t" id="cpopTitle"></span><span class="s" id="cpopSub"></span>
+      <button class="x" onclick="closeChartPop()">×</button>
+    </div>
+    <div class="cpop-b">
+      <div class="cpop-legend" id="cpopLegend"></div>
+      <div class="cpop-chart" id="cpopChart"></div>
+      <div class="cpop-note" id="cpopNote"></div>
+    </div>
   </div>
 </div>
 

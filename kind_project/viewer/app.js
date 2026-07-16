@@ -182,24 +182,28 @@ function perfTable(r) {
   let body = '';
   for (const m of ms) {
     for (const [span, sko] of [['current', '당해실적'], ['cumulative', '누계실적']]) {
-      const curC = moneyCell(r, 'current', span, m), prevC = moneyCell(r, 'previous', span, m), yoyC = moneyCell(r, 'yoy', span, m);
+      const v = num(r, 'current', m.key, span);
+      const curC = moneyCell(r, 'current', span, m);
       const qoq = span === 'current' ? rateCell(r, 'qoq', m, 'current') : '<span class="dash">-</span>';
       const yr = rateCell(r, span === 'current' ? 'yoy_cur' : 'yoy_cum', m, span);
       const first = span === 'current' ? `<td rowspan="2" class="mt">${esc(m.ko)}</td>` : '';
-      body += `<tr>${first}<td class="sp">${sko}</td>
-        <td class="n">${curC}</td><td class="n">${prevC}</td>
-        <td class="n">${qoq}</td><td class="n">${yoyC}</td><td class="n">${yr}</td></tr>`;
+      // 값이 있으면 당해/누계 셀 클릭 시 시계열 바차트
+      const ca = `data-chart="metric" data-mk="${m.key}" data-span="${span}"`;
+      const spCell = v == null ? `<td class="sp">${sko}</td>`
+        : `<td class="sp chartable" ${ca} title="클릭: ${esc(m.ko)} ${sko} 시계열">${sko}</td>`;
+      const curCell = v == null ? `<td class="n">${curC}</td>`
+        : `<td class="n chartable" ${ca} title="클릭: ${esc(m.ko)} ${sko} 시계열">${curC} <span class="chart-ic">📊</span></td>`;
+      body += `<tr>${first}${spCell}${curCell}<td class="n">${qoq}</td><td class="n">${yr}</td></tr>`;
     }
   }
   const p = r.periods || {};
   return `<table class="perf">
     <thead><tr><th colspan="2">구분</th>
       <th>당기실적<br><small>${esc(p.current || '당기')}</small></th>
-      <th>전기실적<br><small>${esc(p.previous || '전기')}</small></th>
       <th>전기대비<br>증감율(%)</th>
-      <th>전년동기실적<br><small>${esc(p.yoy || '전년동기')}</small></th>
       <th>전년동기대비<br>증감율(%)</th></tr></thead>
-    <tbody>${body}</tbody></table>`;
+    <tbody>${body}</tbody></table>
+    <div class="cpop-note" style="margin:6px 2px 0">📊 <b>당해실적·누계실적</b>을 클릭하면 분기/월별 시계열(잠정 vs 확정) 바차트가 열립니다. 전기·전년동기 수치는 차트로 대체했습니다.</div>`;
 }
 
 function otherRowsTable(r) {
@@ -219,8 +223,7 @@ function otherRowsTable(r) {
     if (!isData) {
       if (label && !label.replace(/\s/g, '').startsWith('구분')) section = label;
       return `<tr><td class="mt" style="width:auto">${esc(label)}</td>
-        <td class="n">${plain(cur)}</td><td class="n">${plain(prev)}</td><td class="n">${plain(qraw)}</td>
-        <td class="n">${plain(yoy)}</td><td class="n">${plain(yraw)}</td></tr>`;
+        <td class="n">${plain(cur)}</td><td class="n">${plain(qraw)}</td><td class="n">${plain(yraw)}</td></tr>`;
     }
     const tl = section ? `${section} / ${label}` : label;
     const opi = (cell, g) => {
@@ -235,15 +238,19 @@ function otherRowsTable(r) {
       const cls = n < 0 ? 'down' : 'up';
       return factSpan(el, `기타실적 증감율 · ${tl}`, 'CUR_Q', r.ctx['CUR_Q'] || {}, 'PURE(소수)', `<span class="${cls}">${n > 0 ? '+' : ''}${comma(n)}</span>`, (n / 100).toFixed(4), tl);
     };
+    // 당기실적이 수치면 클릭 시 동일 typed axis 시계열 차트
+    const numeric = pnum(cur) !== null;
+    const ca = `data-chart="other" data-tl="${esc(tl)}"`;
+    const curCell = numeric
+      ? `<td class="n chartable" ${ca} title="클릭: ${esc(tl)} 시계열">${opi(cur, 'current')} <span class="chart-ic">📊</span></td>`
+      : `<td class="n">${opi(cur, 'current')}</td>`;
     return `<tr><td class="mt" style="width:auto">${esc(label)}</td>
-      <td class="n">${opi(cur, 'current')}</td><td class="n">${opi(prev, 'previous')}</td>
-      <td class="n">${rate(qraw, RQ)}</td><td class="n">${opi(yoy, 'yoy')}</td>
-      <td class="n">${rate(yraw, RY)}</td></tr>`;
+      ${curCell}<td class="n">${rate(qraw, RQ)}</td><td class="n">${rate(yraw, RY)}</td></tr>`;
   }).join('');
-  return `<div class="sec" style="margin-top:16px">▸ 기타·가변 항목 <span style="font-weight:400;color:#889;font-size:12px">(회사 자율기재 · 기타실적 · 마우스오버 시 태깅정보)</span></div>
+  return `<div class="sec" style="margin-top:16px">▸ 기타·가변 항목 <span style="font-weight:400;color:#889;font-size:12px">(회사 자율기재 · 기타실적 · 📊 당기실적 클릭 시 시계열 · 마우스오버 시 태깅정보)</span></div>
     <table class="perf"><thead><tr>
-      <th>구분</th><th>당기실적</th><th>전기실적</th><th>전기대비<br>증감율(%)</th>
-      <th>전년동기실적</th><th>전년동기대비<br>증감율(%)</th></tr></thead>
+      <th>구분</th><th>당기실적</th><th>전기대비<br>증감율(%)</th>
+      <th>전년동기대비<br>증감율(%)</th></tr></thead>
     <tbody>${body}</tbody></table>`;
 }
 
@@ -563,6 +570,142 @@ function renderOneTrustChart(r, mk, ko) {
 window.setTrustMetric = k => { state.trustMetric = k; paintDetail(); };
 window.toggleAnalysis = on => { state.analysisMode = on; paintDetail(); };
 
+/* ---------- 시계열 바차트(당해/누계·기타항목 클릭) ----------
+   조회 공시의 당해기간이 분기(3M)면 분기 시계열(잠정 연·확정 진), 월(1M)이면 월별 시계열(잠정만).
+   point-in-time: 이 공시 시점(asOf) 이전 발표만·그 시점까지 공개된 확정만. */
+function ctxKind(c) {
+  if (!c || !c.start || !c.end) return null;
+  if (isQuarterlyCtx(c)) return 'Q';
+  const [sy, sm] = c.start.split('-').map(Number);
+  const [ey, em] = c.end.split('-').map(Number);
+  if (sy === ey && sm === em) return 'M';          // 같은 연·월 = 월별
+  return 'other';
+}
+function mLabel(end) { if (!end) return '-'; const [y, m] = end.split('-'); return `${y.slice(2)}.${m}`; }  // '24.05'
+function metricWon(r, mk, span) { const v = num(r, 'current', mk, span); return (v == null) ? null : Math.round(v * scaleFactor(r)); }
+
+/* 지표(매출/영업이익 등) 분기·월 시계열: [{end,label,jam,conf,d,isCur,monthly}] */
+function metricSeries(r, mk, span) {
+  const asOf = asOfOf(r), finsec = !!r.finsec;
+  const monthly = ctxKind(r.ctx && r.ctx.CUR_Q) === 'M';
+  const peers = DATA.filter(x => x.code === r.code && x.basis === r.basis && !x.sub && x.ctx && x.ctx.CUR_Q)
+    .filter(x => (x.dt || '').slice(0, 10) <= asOf)
+    .filter(x => monthly ? ctxKind(x.ctx.CUR_Q) === 'M' : isQuarterlyCtx(x.ctx.CUR_Q));
+  const byEnd = new Map();
+  for (const p of peers) { const e = p.ctx.CUR_Q.end; if (!byEnd.has(e)) byEnd.set(e, []); byEnd.get(e).push(p); }
+  const rows = [];
+  for (const [end, vers] of byEnd) {
+    vers.sort((a, b) => (a.dt || '').localeCompare(b.dt || ''));
+    const chosen = vers.find(p => metricWon(p, mk, span) != null) || vers[vers.length - 1];
+    const jam = metricWon(chosen, mk, span);
+    if (jam == null) continue;
+    const rc = chosen.recon, rev = !monthly && !finsec && revealed(rc, asOf);
+    const cf = span === 'cumulative' ? 'confY' : 'conf', df = span === 'cumulative' ? 'dY' : 'd';
+    const conf = rev ? ((rc[cf] || {})[mk]) : null, d = rev ? ((rc[df] || {})[mk]) : null;
+    rows.push({ end, label: monthly ? mLabel(end) : qLabel(end), jam, monthly, isCur: chosen.uid === r.uid,
+      conf: (typeof conf === 'number') ? conf : null, d: (typeof d === 'number') ? d : null });
+  }
+  return rows.sort((a, b) => a.end.localeCompare(b.end));
+}
+
+/* 기타·가변항목: 같은 회사 공시들에서 동일 typed axis(섹션/항목명) 값만 모아 시계열 [{end,label,jam,isCur}] */
+function otherSeries(r, tl) {
+  const asOf = asOfOf(r);
+  const kind = ctxKind(r.ctx && r.ctx.CUR_Q);          // 조회 공시 주기(월/분기)와 동일한 것만 모아 기간단위 일치
+  const pnum = s => { let t = String(s || '').replace(/,/g, '').replace(/%/g, '').trim(); if (t.startsWith('+')) t = t.slice(1); return /^-?\d+(\.\d+)?$/.test(t) ? parseFloat(t) : null; };
+  const peers = DATA.filter(x => x.code === r.code && x.basis === r.basis && !x.sub && x.ctx && x.ctx.CUR_Q && (x.other_rows || []).length)
+    .filter(x => (x.dt || '').slice(0, 10) <= asOf)
+    .filter(x => ctxKind(x.ctx.CUR_Q) === kind);
+  const byEnd = new Map();
+  for (const p of peers) {
+    let section = '', val = null;
+    for (const row of p.other_rows) {
+      const label = (row.label || '').trim(), cur = (row.current || '').trim();
+      const isData = [cur, (row.previous || ''), (row.yoy || '')].some(v => pnum(v) !== null);
+      if (!isData) { if (label && !label.replace(/\s/g, '').startsWith('구분')) section = label; continue; }
+      if ((section ? `${section} / ${label}` : label) === tl) { val = pnum(cur); break; }
+    }
+    if (val == null) continue;
+    const end = p.ctx.CUR_Q.end;
+    if (!byEnd.has(end)) byEnd.set(end, []);
+    byEnd.get(end).push({ p, val, kind: ctxKind(p.ctx.CUR_Q) });
+  }
+  const rows = [];
+  for (const [end, arr] of byEnd) {
+    arr.sort((a, b) => (a.p.dt || '').localeCompare(b.p.dt || ''));
+    const last = arr[arr.length - 1];
+    rows.push({ end, label: last.kind === 'M' ? mLabel(end) : qLabel(end), jam: last.val, isCur: last.p.uid === r.uid });
+  }
+  return rows.sort((a, b) => a.end.localeCompare(b.end));
+}
+
+const CPOP_LIGHT = '#9cc0e4', CPOP_DARK = '#0b3d68';   // 잠정(연) / 확정(진)
+function openMetricChart(mk, span) {
+  const r = DATA.find(x => x.uid === curUid); if (!r) return;
+  const meta = METRICS.find(m => m.key === mk) || { ko: mk };
+  const rows = metricSeries(r, mk, span);
+  const monthly = rows.length ? rows[0].monthly : ctxKind(r.ctx && r.ctx.CUR_Q) === 'M';
+  const sub = monthly ? '월별 추이(잠정)' : (r.finsec ? '분기별 추이 · 금융업종(확정 대사불가)' : '분기별 · 잠정 vs 확정');
+  renderCPop(`${meta.ko} · ${span === 'cumulative' ? '누계실적' : '당해실적'}`, sub, rows,
+    { hasConf: rows.some(o => o.conf != null), unitMode: 'won', cur: r.uid });
+}
+function openOtherChart(tl) {
+  const r = DATA.find(x => x.uid === curUid); if (!r) return;
+  renderCPop(`기타실적 · ${tl}`, 'typed axis 동일 항목 시계열(잠정)', otherSeries(r, tl),
+    { hasConf: false, unitMode: 'raw', cur: r.uid });
+}
+window.openMetricChart = openMetricChart;
+window.openOtherChart = openOtherChart;
+window.closeChartPop = () => document.getElementById('cpop').classList.remove('on');
+
+function renderCPop(title, sub, rows, opts) {
+  document.getElementById('cpopTitle').textContent = title;
+  document.getElementById('cpopSub').textContent = sub;
+  document.getElementById('cpop').classList.add('on');
+  const el = document.getElementById('cpopChart'), legend = document.getElementById('cpopLegend'), note = document.getElementById('cpopNote');
+  if (!rows.length) { el.innerHTML = '<div class="chart-empty">표시할 시계열이 없습니다 (이 시점 기준).</div>'; legend.innerHTML = ''; note.textContent = ''; return; }
+
+  let div = 1, unit = '';
+  if (opts.unitMode === 'won') {
+    const mx = Math.max(...rows.flatMap(o => [o.jam, o.conf]).filter(v => v != null).map(Math.abs), 1);
+    [div, unit] = mx >= 1e12 ? [1e12, '조원'] : mx >= 1e8 ? [1e8, '억원'] : [1, '원'];
+  }
+  const xs = rows.map(o => o.label), sc = v => v == null ? null : v / div;
+  const fmt = v => v == null ? '' : (opts.unitMode === 'won'
+    ? (v / div).toLocaleString('ko-KR', { maximumFractionDigits: div >= 1e12 ? 2 : 0 })
+    : v.toLocaleString('ko-KR'));
+  const traces = [{
+    x: xs, y: rows.map(o => sc(o.jam)), name: '잠정', type: 'bar', marker: { color: CPOP_LIGHT },
+    text: rows.map(o => fmt(o.jam)), textposition: 'outside', textfont: { size: 10, color: '#12518a' },
+    cliponaxis: false, hovertemplate: '%{x} 잠정<br>%{text} ' + unit + '<extra></extra>',
+  }];
+  if (opts.hasConf) {   // 확정치 있는 분기만(null 막대는 제외 → 빈 레이블 NaN transform 방지)
+    const cx = [], cy = [], ct = [];
+    rows.forEach(o => { if (o.conf != null) { cx.push(o.label); cy.push(sc(o.conf)); ct.push(fmt(o.conf)); } });
+    traces.push({
+      x: cx, y: cy, name: '확정', type: 'bar', marker: { color: CPOP_DARK },
+      text: ct, textposition: 'outside', textfont: { size: 10, color: CPOP_DARK },
+      cliponaxis: false, hovertemplate: '%{x} 확정<br>%{text} ' + unit + '<extra></extra>',
+    });
+  }
+  const layout = {
+    barmode: 'group', bargap: 0.3, bargroupgap: 0.06, height: 372,
+    margin: { l: 58, r: 16, t: 16, b: 40 }, paper_bgcolor: '#fff', plot_bgcolor: '#fff',
+    xaxis: { type: 'category', tickfont: { size: 11, color: '#334' }, fixedrange: true },   // 월 레이블('24.05')이 수치로 해석되지 않도록 범주 고정
+    yaxis: { title: { text: unit, font: { size: 11, color: '#889' } }, gridcolor: '#eef1f5', griddash: 'dash', zeroline: true, zerolinecolor: '#d5dde6', tickfont: { size: 10, color: '#667' }, fixedrange: true },
+    showlegend: false, hovermode: 'closest',
+  };
+  Plotly.newPlot(el, traces, layout, { displayModeBar: false, responsive: true });
+
+  legend.innerHTML = `<span><i style="background:${CPOP_LIGHT}"></i>잠정(공정공시)</span>`
+    + (opts.hasConf ? `<span><i style="background:${CPOP_DARK}"></i>확정(정기보고서)</span>` : '');
+  note.textContent = opts.hasConf
+    ? '· 잠정=거래소 공정공시(감사전) · 확정=DART 정기보고서(검토·감사후) · 각 막대에 수치 표기.'
+    : (opts.unitMode === 'raw'
+      ? '· 회사 자율기재(기타실적) 원자료 수치 · 동일 typed axis 항목만 모아 시계열화(확정 대사 없음).'
+      : '· 잠정(공정공시) 발표치 추이 · 월별 공시는 정기보고서 대사 대상이 아니라 확정치가 없습니다.');
+}
+
 let curUid = null, curTab = 'form';
 window.openDetail = uid => {
   curUid = uid; curTab = 'form';
@@ -686,7 +829,19 @@ function bind() {
   document.querySelectorAll('#flowseg button').forEach(b => b.onclick = () => setFlow(+b.dataset.mult));
   updateAsofUI(true);   // 초기: 2026-01-01로 세팅
   document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeDetail(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+  // 당해/누계·기타항목 셀 클릭 → 시계열 바차트 팝업
+  document.addEventListener('click', e => {
+    const c = e.target.closest && e.target.closest('.chartable');
+    if (!c) return;
+    if (c.dataset.chart === 'metric') openMetricChart(c.dataset.mk, c.dataset.span);
+    else if (c.dataset.chart === 'other') openOtherChart(c.dataset.tl);
+  });
+  const cpop = document.getElementById('cpop');
+  cpop.addEventListener('click', e => { if (e.target.id === 'cpop') closeChartPop(); });
+  document.addEventListener('keydown', e => {   // Esc: 차트 팝업 먼저, 없으면 상세 닫기
+    if (e.key !== 'Escape') return;
+    if (cpop.classList.contains('on')) closeChartPop(); else closeDetail();
+  });
   // 팩트 마우스오버 툴팁
   const tip = document.getElementById('tip');
   document.addEventListener('mouseover', e => {
