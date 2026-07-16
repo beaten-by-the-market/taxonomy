@@ -602,7 +602,9 @@ function metricSeries(r, mk, span) {
     const rc = chosen.recon, rev = !monthly && !finsec && revealed(rc, asOf);
     const cf = span === 'cumulative' ? 'confY' : 'conf', df = span === 'cumulative' ? 'dY' : 'd';
     const conf = rev ? ((rc[cf] || {})[mk]) : null, d = rev ? ((rc[df] || {})[mk]) : null;
-    rows.push({ end, label: monthly ? mLabel(end) : qLabel(end), jam, monthly, isCur: chosen.uid === r.uid,
+    const pctx = (span === 'cumulative' ? chosen.ctx.CUR_YTD : chosen.ctx.CUR_Q) || {};   // 당해=분기, 누계=YTD 기간
+    const per = pctx.start ? (pctx.start === pctx.end ? pctx.start : pctx.start + ' ~ ' + pctx.end) : '';
+    rows.push({ end, label: monthly ? mLabel(end) : qLabel(end), jam, monthly, per, isCur: chosen.uid === r.uid,
       conf: (typeof conf === 'number') ? conf : null, d: (typeof d === 'number') ? d : null });
   }
   return rows.sort((a, b) => a.end.localeCompare(b.end));
@@ -634,7 +636,9 @@ function otherSeries(r, tl) {
   for (const [end, arr] of byEnd) {
     arr.sort((a, b) => (a.p.dt || '').localeCompare(b.p.dt || ''));
     const last = arr[arr.length - 1];
-    rows.push({ end, label: last.kind === 'M' ? mLabel(end) : qLabel(end), jam: last.val, isCur: last.p.uid === r.uid });
+    const pctx = last.p.ctx.CUR_Q || {};   // 기타실적은 당분기(CUR_Q) 컨텍스트에 태깅
+    const per = pctx.start ? (pctx.start === pctx.end ? pctx.start : pctx.start + ' ~ ' + pctx.end) : '';
+    rows.push({ end, label: last.kind === 'M' ? mLabel(end) : qLabel(end), jam: last.val, per, isCur: last.p.uid === r.uid });
   }
   return rows.sort((a, b) => a.end.localeCompare(b.end));
 }
@@ -652,7 +656,7 @@ function openMetricChart(mk, span) {
 function openOtherChart(tl) {
   const r = DATA.find(x => x.uid === curUid); if (!r) return;
   renderCPop(`기타실적 · ${tl}`, 'typed axis 동일 항목 시계열(잠정)', otherSeries(r, tl),
-    { hasConf: false, unitMode: 'raw', cur: r.uid });
+    { hasConf: false, unitMode: 'raw', cur: r.uid, tl });
 }
 window.openMetricChart = openMetricChart;
 window.openOtherChart = openOtherChart;
@@ -674,18 +678,23 @@ function renderCPop(title, sub, rows, opts) {
   const fmt = v => v == null ? '' : (opts.unitMode === 'won'
     ? (v / div).toLocaleString('ko-KR', { maximumFractionDigits: div >= 1e12 ? 2 : 0 })
     : v.toLocaleString('ko-KR'));
+  const uSuf = unit ? ' ' + unit : '';
+  const itemLine = opts.tl ? opts.tl.replace(/%/g, '％') + '<br>' : '';   // 기타항목: typed axis 항목명
   const traces = [{
-    x: xs, y: rows.map(o => sc(o.jam)), name: '잠정', type: 'bar', marker: { color: CPOP_LIGHT },
+    x: xs, y: rows.map(o => sc(o.jam)), customdata: rows.map(o => o.per || '-'),
+    name: '잠정', type: 'bar', marker: { color: CPOP_LIGHT },
     text: rows.map(o => fmt(o.jam)), textposition: 'outside', textfont: { size: 10, color: '#12518a' },
-    cliponaxis: false, hovertemplate: '%{x} 잠정<br>%{text} ' + unit + '<extra></extra>',
+    cliponaxis: false,
+    hovertemplate: `<b>%{x}</b> 잠정<br>${itemLine}기간 %{customdata}<br>%{text}${uSuf}<extra></extra>`,
   }];
   if (opts.hasConf) {   // 확정치 있는 분기만(null 막대는 제외 → 빈 레이블 NaN transform 방지)
-    const cx = [], cy = [], ct = [];
-    rows.forEach(o => { if (o.conf != null) { cx.push(o.label); cy.push(sc(o.conf)); ct.push(fmt(o.conf)); } });
+    const cx = [], cy = [], ct = [], cc = [];
+    rows.forEach(o => { if (o.conf != null) { cx.push(o.label); cy.push(sc(o.conf)); ct.push(fmt(o.conf)); cc.push(o.per || '-'); } });
     traces.push({
-      x: cx, y: cy, name: '확정', type: 'bar', marker: { color: CPOP_DARK },
+      x: cx, y: cy, customdata: cc, name: '확정', type: 'bar', marker: { color: CPOP_DARK },
       text: ct, textposition: 'outside', textfont: { size: 10, color: CPOP_DARK },
-      cliponaxis: false, hovertemplate: '%{x} 확정<br>%{text} ' + unit + '<extra></extra>',
+      cliponaxis: false,
+      hovertemplate: `<b>%{x}</b> 확정<br>기간 %{customdata}<br>%{text}${uSuf}<extra></extra>`,
     });
   }
   const layout = {
