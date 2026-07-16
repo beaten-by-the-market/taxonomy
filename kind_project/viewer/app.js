@@ -24,7 +24,7 @@ const CTX_KO = {
    simNow = 사용자가 가정한 '지금'. 목록은 dt<=simNow 인 공시만 노출하고,
    확정치 공개(revealed)도 이 시각 기준으로 판단한다. 시간흐름 배속이 켜지면
    실제 경과시간 × 배속만큼 simNow가 전진하며 그 사이 접수된 공시가 나타난다. */
-let simNow = new Date();          // 기본: 실제 현재
+let simNow = new Date(2024, 0, 1, 0, 0, 0, 0);   // 기본: 2024-01-01 (시뮬레이션 시작점)
 let flowMult = 0;                 // 시간흐름 배속 (0=정지)
 let flowTimer = null, flowLast = 0;
 let flashUids = new Set();        // 이번 렌더에서 '방금 접수' 하이라이트할 uid
@@ -680,7 +680,7 @@ function bind() {
     const [y, mo, d] = v.split('-').map(Number); applyAsofDate(y, mo, d, true);
   });
   document.querySelectorAll('#flowseg button').forEach(b => b.onclick = () => setFlow(+b.dataset.mult));
-  updateAsofUI(true);   // 초기: 실제 오늘로 세팅
+  updateAsofUI(true);   // 초기: 2024-01-01로 세팅
   document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeDetail(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
   // 팩트 마우스오버 툴팁
