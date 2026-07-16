@@ -40,6 +40,10 @@ select{border:1px solid #c3ccd6;border-radius:6px;padding:8px 10px;font-size:12p
 .flowseg button{background:rgba(255,255,255,.1);color:#eaf1f8;font-weight:600;padding:7px 11px}
 .flowseg button.on{background:#fff;color:var(--navy)}
 .flowseg button:hover:not(.on){background:rgba(255,255,255,.22)}
+/* 정지 버튼 — 빨간색으로 강조 */
+.flowseg button[data-mult="0"]{background:rgba(224,86,62,.3);color:#ffd7cf;font-weight:700}
+.flowseg button[data-mult="0"]:hover:not(.on){background:rgba(224,86,62,.5);color:#fff}
+.flowseg button[data-mult="0"].on{background:#e0402e;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35) inset}
 @keyframes rowin{0%{background:#fff3cf}100%{background:transparent}}
 table.list tbody tr.justin{animation:rowin 1.7s ease-out}
 #stat{margin-left:auto;color:#445;font-size:12px}
