@@ -24,7 +24,7 @@ const CTX_KO = {
    simNow = 사용자가 가정한 '지금'. 목록은 dt<=simNow 인 공시만 노출하고,
    확정치 공개(revealed)도 이 시각 기준으로 판단한다. 시간흐름 배속이 켜지면
    실제 경과시간 × 배속만큼 simNow가 전진하며 그 사이 접수된 공시가 나타난다. */
-let simNow = new Date(2024, 0, 1, 0, 0, 0, 0);   // 기본: 2024-01-01 (시뮬레이션 시작점)
+let simNow = new Date(2026, 0, 1, 0, 0, 0, 0);   // 기본: 2026-01-01 (시뮬레이션 시작점)
 let flowMult = 0;                 // 시간흐름 배속 (0=정지)
 let flowTimer = null, flowLast = 0;
 let flashUids = new Set();        // 이번 렌더에서 '방금 접수' 하이라이트할 uid
@@ -272,7 +272,7 @@ function computeFacts(r) {
   const facts = [];
   const f = scaleFactor(r), conn = r.basis === 'consolidated';
   const ms = METRICS.filter(m => conn || m.key !== 'ProfitLossAttributableToOwnersOfParent');
-  facts.push({ el: 'krx-gcd:NameOfCompany', ko: '회사명', ctx: 'META', unit: '', val: `${r.company} (${r.code})`, txt: true });
+  facts.push({ el: 'krx-gcd:NameOfCompany', ko: r.sub_name ? '회사명(자회사)' : '회사명', ctx: 'META', unit: '', val: r.sub_name || `${r.company} (${r.code})`, txt: true });
   for (const m of ms) {
     for (const g of ['current', 'previous', 'yoy']) {
       for (const span of ['current', 'cumulative']) {
@@ -319,7 +319,11 @@ function factsTab(r) {
       <td class="ctx">${esc(CTX_KO[x.ctx] || x.ctx)} ${dim}<br><small>${esc(per)}</small>${typed}</td>
       <td class="n">${valSpan}</td><td class="un">${esc(x.unit)}</td></tr>`;
   }).join('');
-  return `<div class="fnote">이 공시에서 태깅된 XBRL 팩트 <b>${facts.length}</b>건 · 금액 단위 KRW(원), 증감율 소수</div>
+  const idBox = r.sub_name
+    ? `<div class="idbox idsub">🏢 entity identifier: <b>${esc(r.sub_name)}</b> <span class="idsubtag">자회사</span> · Dimension <b>krx-common:SubsidiariesAxis</b>=MaterialSubsidiariesMember<br><small>이 공시는 ${esc(r.company)}(${esc(r.code)})가 자회사 <b>${esc(r.sub_name)}</b>의 실적을 대신 공시한 것 → 모든 fact의 entity가 자회사로 태깅됩니다.</small></div>`
+    : `<div class="idbox">entity identifier: <b>${esc(r.code)}</b> (${esc(r.company)}) · scheme krx.or.kr/CIK</div>`;
+  return `${idBox}
+    <div class="fnote">이 공시에서 태깅된 XBRL 팩트 <b>${facts.length}</b>건 · 금액 단위 KRW(원), 증감율 소수</div>
     <table class="facts"><thead><tr><th>XBRL element</th><th>항목(lineitem)</th><th>컨텍스트(기간/Dimension)</th><th>값</th><th>단위</th></tr></thead>
     <tbody>${rows}</tbody></table>`;
 }
@@ -680,7 +684,7 @@ function bind() {
     const [y, mo, d] = v.split('-').map(Number); applyAsofDate(y, mo, d, true);
   });
   document.querySelectorAll('#flowseg button').forEach(b => b.onclick = () => setFlow(+b.dataset.mult));
-  updateAsofUI(true);   // 초기: 2024-01-01로 세팅
+  updateAsofUI(true);   // 초기: 2026-01-01로 세팅
   document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeDetail(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
   // 팩트 마우스오버 툴팁
